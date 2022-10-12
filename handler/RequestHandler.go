@@ -43,6 +43,17 @@ func UpdateRequestStatus(w http.ResponseWriter, r *http.Request) {
 		api.Response(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
+	if update && request.Status == service.ACCEPT {
+
+		asset, err := service.GetAssetByAssetId(request.AssetId)
+		if err != nil {
+			api.Response(http.StatusInternalServerError, err.Error(), w)
+			return
+		}
+		asset.Available = asset.Available - 1
+		asset.Allocate = asset.Allocate + 1
+		asset.Update()
+	}
 	if update {
 		api.Response(http.StatusOK, "Asset Request created successfully", w)
 		fmt.Println("Asset Request created successfully")

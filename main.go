@@ -31,12 +31,10 @@ func StartHttp() {
 	router.HandleFunc("/asset/list", handler.ReadAllAsset).Methods(http.MethodGet)
 	router.HandleFunc("/employee/assets/{empId}", handler.EmployeeAssetAllocation).Methods(http.MethodGet)
 
-	//admin
 	router.Handle("/employee/create", handler.JwtVerify(http.HandlerFunc(handler.Create), admin)).Methods(http.MethodPost)
 	router.Handle("/employee/list", handler.JwtVerify(http.HandlerFunc(handler.ReadAll), admin)).Methods(http.MethodGet)
 	router.Handle("/employee/delete/{empId}", handler.JwtVerify(http.HandlerFunc(handler.Delete), admin)).Methods(http.MethodDelete)
 	router.Handle("/employee/update", handler.JwtVerify(http.HandlerFunc(handler.Update), emp)).Methods(http.MethodPost)
-
 	// s := router.PathPrefix("/auth").Subrouter()
 	router.Handle("/asset/create", handler.JwtVerify(http.HandlerFunc(handler.CreateAsset), admin)).Methods(http.MethodPost)
 	router.Handle("/asset/delete/{assetId}", handler.JwtVerify(http.HandlerFunc(handler.DeleteAsset), admin)).Methods(http.MethodDelete)
