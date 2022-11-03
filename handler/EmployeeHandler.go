@@ -23,6 +23,14 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		api.Response(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
+	password := Generate(8, 1, 1, 1)
+	emp, err = service.GetEmployeeByEmail(emp.Email)
+	user := service.User{Role: "EMP", Username: emp.Email, Password: password, EmpId: uint(emp.EmpId)}
+	err = CreateUser(user)
+	if err != nil {
+		api.Response(http.StatusInternalServerError, err.Error(), w)
+		return
+	}
 	api.Response(http.StatusOK, "Employee created successfully", w)
 	fmt.Println("Employee created successfully")
 }

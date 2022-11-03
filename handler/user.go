@@ -1,11 +1,13 @@
 package handler
 
 import (
+	api "com/josh/asset/api"
 	"com/josh/asset/db"
 	"com/josh/asset/service"
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -70,7 +72,7 @@ func FindOne(email, password string) map[string]interface{} {
 }
 
 // JwtVerify Middleware function
-func JwtVerify(next http.Handler, role string) http.Handler {
+func JwtVerify(next http.Handler, role ...string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		var header = r.Header.Get("Authorization") //Grab the token from the header
@@ -95,7 +97,7 @@ func JwtVerify(next http.Handler, role string) http.Handler {
 			json.NewEncoder(w).Encode(err.Error())
 			return
 		}
-		if role != tk.Role {
+		if !contains(role, tk.Role) {
 			w.WriteHeader(http.StatusForbidden)
 			json.NewEncoder(w).Encode("You don't has enough privileges to perform an action ")
 			return
@@ -103,4 +105,111 @@ func JwtVerify(next http.Handler, role string) http.Handler {
 		ctx := context.WithValue(r.Context(), "user", tk)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func contains(list []string, ele string) bool {
+	for _, role := range list {
+		if role == ele {
+			return true
+		}
+	}
+	return false
+}
+
+func Logout(w http.ResponseWriter, r *http.Request) {
+
+	var header = r.Header.Get("Authorization") //Grab the token from the header
+	fmt.Println(r.Header)
+	header = strings.TrimSpace(header)
+
+	if header == "" {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode("Missing auth token")
+		return
+	}
+	tk := &service.Token{}
+	_, err := jwt.ParseWithClaims(header, tk, func(token *jwt.Token) (interface{}, error) {
+		return []byte("secret"), nil
+	})
+
+	fmt.Println("tk=>>>", *tk)
+
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(err.Error())
+		return
+	}
+	expiresAt := time.Now().Add(time.Millisecond * 0).Unix()
+	tk.ExpiresAt = expiresAt
+	tk = &service.Token{
+		UserID: 0,
+		Name:   "",
+		// Email:  user.Email,
+		Role: "",
+		StandardClaims: &jwt.StandardClaims{
+			ExpiresAt: expiresAt,
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
+	c := http.Cookie{
+		Name:   "token",
+		MaxAge: -1}
+	http.SetCookie(w, &c)
+
+	token.SignedString([]byte(""))
+	api.Response(http.StatusOK, "Logout successfully", w)
+
+}
+
+///
+
+var (
+	lowerCharSet   = "abcdedfghijklmnopqrst"
+	upperCharSet   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	specialCharSet = "!@#$%&*"
+	numberSet      = "0123456789"
+	allCharSet     = lowerCharSet + upperCharSet + specialCharSet + numberSet
+)
+
+func Generate(passwordLength, minSpecialChar, minNum, minUpperCase int) string {
+	var password strings.Builder
+
+	//Set special character
+	for i := 0; i < minSpecialChar; i++ {
+		random := rand.Intn(len(specialCharSet))
+		password.WriteString(string(specialCharSet[random]))
+	}
+
+	//Set numeric
+	for i := 0; i < minNum; i++ {
+		random := rand.Intn(len(numberSet))
+		password.WriteString(string(numberSet[random]))
+	}
+
+	//Set uppercase
+	for i := 0; i < minUpperCase; i++ {
+		random := rand.Intn(len(upperCharSet))
+		password.WriteString(string(upperCharSet[random]))
+	}
+
+	remainingLength := passwordLength - minSpecialChar - minNum - minUpperCase
+	for i := 0; i < remainingLength; i++ {
+		random := rand.Intn(len(allCharSet))
+		password.WriteString(string(allCharSet[random]))
+	}
+	inRune := []rune(password.String())
+	rand.Shuffle(len(inRune), func(i, j int) {
+		inRune[i], inRune[j] = inRune[j], inRune[i]
+	})
+	return string(inRune)
+}
+
+func CreateUser(user service.User) error {
+	db := db.GetDB()
+	err := db.Create(&user).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }

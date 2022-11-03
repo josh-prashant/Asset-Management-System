@@ -26,11 +26,11 @@ func (data Employee) Create() error {
 	db := db.GetDB()
 	// id := 0
 	// err := db.QueryRow(addEmployeeQuery, data.FirstName, data.LastName, data.Mobile).Err()
-	err := db.Create(data).Error
+	err := db.Create(&data).Error
 	if err != nil {
 		return err
 	}
-	fmt.Println("EmployeeService:Employee created successfully")
+	fmt.Println("EmployeeService:Employee created successfully", data)
 	return nil
 }
 
@@ -105,5 +105,16 @@ func Update(emp Employee) (Employee, error) {
 	// }
 	fmt.Println("EmployeeService:Employee Updated successfully")
 
+	return emp, nil
+}
+
+func GetEmployeeByEmail(email string) (Employee, error) {
+	var emp Employee
+	db := db.GetDB()
+	err := db.Model(emp).Where("email=?", email).Scan(&emp).Error
+	if err != nil {
+		return Employee{}, err
+	}
+	fmt.Println("EmployeeService:Employee Found ")
 	return emp, nil
 }

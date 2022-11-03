@@ -7,8 +7,13 @@ import (
 	logger "github.com/sirupsen/logrus"
 )
 
+type ResponseObject struct {
+	StatusCode int
+	Data       interface{}
+}
+
 func Response(status int, data interface{}, rw http.ResponseWriter) {
-	respBytes, err := json.Marshal(data)
+	respBytes, err := json.Marshal(ResponseObject{status, data})
 	if err != nil {
 		logger.Error(err)
 		status = http.StatusInternalServerError

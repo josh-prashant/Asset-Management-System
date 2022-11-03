@@ -38,14 +38,17 @@ func UpdateRequestStatus(w http.ResponseWriter, r *http.Request) {
 		api.Response(http.StatusBadRequest, err.Error(), w)
 		return
 	}
+	fmt.Println("In UpdateRequestStatus Request", request)
 	update, err := request.UpdateRequestStatus()
 	if err != nil {
 		api.Response(http.StatusInternalServerError, err.Error(), w)
 		return
 	}
-	if update && request.Status == service.ACCEPT {
-
-		asset, err := service.GetAssetByAssetId(request.AssetId)
+	fmt.Println("Before update")
+	if update && request.Status == service.APPROVE {
+		updatedReq, err := service.GetRequest(request.ReqId)
+		fmt.Println("updated", updatedReq)
+		asset, err := service.GetAssetByAssetId(updatedReq.AssetId)
 		if err != nil {
 			api.Response(http.StatusInternalServerError, err.Error(), w)
 			return
@@ -55,8 +58,8 @@ func UpdateRequestStatus(w http.ResponseWriter, r *http.Request) {
 		asset.Update()
 	}
 	if update {
-		api.Response(http.StatusOK, "Asset Request created successfully", w)
-		fmt.Println("Asset Request created successfully")
+		api.Response(http.StatusOK, "Asset Request updated successfully", w)
+		fmt.Println("Asset Request updated successfully")
 	}
 }
 
@@ -94,4 +97,18 @@ func FetchAllRequests(w http.ResponseWriter, r *http.Request) {
 		}
 		api.Response(http.StatusOK, requests, w)
 	}
+}
+func GetRequestStatus(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	reqId := vars["reqId"]
+	i, err := strconv.Atoi(reqId)
+	if err != nil {
+		return
+	}
+	request, err := service.GetRequest(i)
+	if err != nil {
+		api.Response(http.StatusInternalServerError, err.Error(), w)
+		return
+	}
+	api.Response(http.StatusOK, request, w)
 }

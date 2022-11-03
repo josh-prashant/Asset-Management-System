@@ -28,8 +28,11 @@ func StartHttp() {
 
 	//shared
 	router.HandleFunc("/login", handler.Login).Methods("POST")
-	router.HandleFunc("/asset/list", handler.ReadAllAsset).Methods(http.MethodGet)
-	router.HandleFunc("/employee/assets/{empId}", handler.EmployeeAssetAllocation).Methods(http.MethodGet)
+	// router.HandleFunc("/logout", handler.Logout).Methods("POST")
+	// router.HandleFunc("/asset/list", handler.ReadAllAsset).Methods(http.MethodGet)
+	// router.HandleFunc("/employee/assets/{empId}", handler.EmployeeAssetAllocation).Methods(http.MethodGet)
+	router.Handle("/asset/list", handler.JwtVerify(http.HandlerFunc(handler.ReadAllAsset), admin, emp)).Methods(http.MethodGet)
+	router.Handle("/employee/assets/{empId}", handler.JwtVerify(http.HandlerFunc(handler.EmployeeAssetAllocation), admin, emp)).Methods(http.MethodGet)
 
 	router.Handle("/employee/create", handler.JwtVerify(http.HandlerFunc(handler.Create), admin)).Methods(http.MethodPost)
 	router.Handle("/employee/list", handler.JwtVerify(http.HandlerFunc(handler.ReadAll), admin)).Methods(http.MethodGet)
@@ -44,7 +47,7 @@ func StartHttp() {
 	router.Handle("/request/create", handler.JwtVerify(http.HandlerFunc(handler.CreateRequest), emp)).Methods(http.MethodPost)
 	router.Handle("/request/update", handler.JwtVerify(http.HandlerFunc(handler.UpdateRequestStatus), admin)).Methods(http.MethodPost)
 	router.Handle("/employee/request/{empId}", handler.JwtVerify(http.HandlerFunc(handler.GetAllRequestsByEmpId), admin)).Methods(http.MethodGet)
-	// router.Handle("/employee/request/{empId}", handler.JwtVerify(http.HandlerFunc(handler.FetchAllRequests), admin)).Methods(http.MethodGet)
+	router.Handle("/request/status/{reqId}", handler.JwtVerify(http.HandlerFunc(handler.GetRequestStatus), emp)).Methods(http.MethodGet)
 
 	http.Handle("/", router)
 	http.ListenAndServe(":8081", nil)

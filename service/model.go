@@ -10,6 +10,7 @@ type Employee struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	Mobile    int    `json:"mobileNumber"`
+	Email     string `json:"email"`
 }
 
 type Asset struct {

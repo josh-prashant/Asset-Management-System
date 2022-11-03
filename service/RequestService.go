@@ -8,15 +8,16 @@ import (
 type RequestService interface {
 	CreateRequest()
 	UpdateRequestStatus() (bool, error)
-	CheckRequestStatus(requestId int) Request //optional
+	// CheckRequestStatus(requestId int) Request //TODO
 	GetAllRequestsByEmpId(empId int) []Request
 	FetchAllRequests(status Status) []Request //admin
+	GetRequest(reqId int) (request Request, err error)
 }
 
 type Status string
 
 const (
-	ACCEPT  Status = "ACCEPT"
+	APPROVE Status = "APPROVE"
 	PENDING Status = "PENDING"
 	REJECT  Status = "REJECT"
 )
@@ -34,7 +35,11 @@ func (req Request) CreateRequest() error {
 // need to improve
 func (input Request) UpdateRequestStatus() (bool, error) {
 	db := db.GetDB()
-	result := db.Model(Request{}).Where("req_id = ?", input.ReqId).Update("status", input.Status)
+	// result := db.Model(Request{}).Where("req_id = ?", input.ReqId).Update("status", input.Status, "note", input.Note)
+	if input.Status == APPROVE && len(input.Note) == 0 {
+		input.Note = "Approved"
+	}
+	result := db.Model(Request{}).Where("req_id = ?", input.ReqId).Select("status", "note").Updates(Request{Status: input.Status, Note: input.Note})
 
 	if result.Error != nil {
 		return false, errors.New("Request failed")
@@ -46,6 +51,8 @@ func (input Request) UpdateRequestStatus() (bool, error) {
 	return true, nil
 
 }
+
+// TODO
 func (req Request) CheckRequestStatus(requestId int) Request {
 	return req
 }
@@ -68,5 +75,13 @@ func ReadAllRequests() (requests []Request, err error) {
 func FetchAllRequests(status Status) (requests []Request, err error) {
 	db := db.GetDB()
 	err = db.Where("status = ?", status).Scan(&requests).Error
+	return
+}
+
+func GetRequest(reqId int) (request Request, err error) {
+
+	db := db.GetDB()
+	err = db.Table("request").Where("req_id = ?", reqId).Scan(&request).Error
+	// err = db.First(&request, reqId).Error
 	return
 }
