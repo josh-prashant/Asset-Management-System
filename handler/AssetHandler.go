@@ -18,6 +18,9 @@ func CreateAsset(w http.ResponseWriter, r *http.Request) {
 		api.Response(http.StatusBadRequest, err.Error(), w)
 		return
 	}
+	if asset.Available == 0 {
+		asset.Available = asset.TotalCount
+	}
 	err = asset.Create()
 	if err != nil {
 		api.Response(http.StatusInternalServerError, err.Error(), w)
@@ -53,7 +56,7 @@ func EditAsset(w http.ResponseWriter, r *http.Request) {
 	}
 	res := make(map[string]service.Asset)
 	res["Asset updated successfully"] = asset
-	api.Response(http.StatusInternalServerError, res, w)
+	api.Response(http.StatusOK, res, w)
 
 }
 

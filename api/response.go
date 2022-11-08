@@ -8,12 +8,12 @@ import (
 )
 
 type ResponseObject struct {
-	StatusCode int
-	Data       interface{}
+	// StatusCode int
+	Data interface{}
 }
 
 func Response(status int, data interface{}, rw http.ResponseWriter) {
-	respBytes, err := json.Marshal(ResponseObject{status, data})
+	respBytes, err := json.Marshal(ResponseObject{data})
 	if err != nil {
 		logger.Error(err)
 		status = http.StatusInternalServerError

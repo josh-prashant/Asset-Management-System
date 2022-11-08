@@ -103,6 +103,7 @@ func AssignAsset(w http.ResponseWriter, r *http.Request) {
 		api.Response(http.StatusBadRequest, "Invalid/Incomplete request body", w)
 		return
 	}
+	// TODO :check whether the emp is exists
 	err = service.AssignAsset(empAsset)
 	if err != nil {
 		api.Response(http.StatusInternalServerError, err.Error(), w)
@@ -117,5 +118,7 @@ func AssignAsset(w http.ResponseWriter, r *http.Request) {
 	asset.Available = asset.Available - 1
 	asset.Allocate = asset.Allocate + 1
 	asset.Update()
+
+	api.Response(http.StatusOK, "Asset assigned sucessfully", w)
 
 }

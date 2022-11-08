@@ -15,6 +15,8 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+var whiteListTokens = make([]string, 5, 5)
+
 func Login(w http.ResponseWriter, r *http.Request) {
 	user := &service.User{}
 	err := json.NewDecoder(r.Body).Decode(user)
@@ -64,10 +66,12 @@ func FindOne(email, password string) map[string]interface{} {
 	if error != nil {
 		fmt.Println(error)
 	}
+	//add into whitelist
+	whiteListTokens = append(whiteListTokens, tokenString)
 
-	var resp = map[string]interface{}{"status": false, "message": "logged in"}
+	var resp = map[string]interface{}{}
 	resp["token"] = tokenString //Store the token in the response
-	resp["user"] = user
+	// resp["user"] = user
 	return resp
 }
 
@@ -85,6 +89,12 @@ func JwtVerify(next http.Handler, role ...string) http.Handler {
 			json.NewEncoder(w).Encode("Missing auth token")
 			return
 		}
+		if !contains(whiteListTokens, header) {
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode("Invalid token")
+			return
+		}
+
 		tk := &service.Token{}
 		_, err := jwt.ParseWithClaims(header, tk, func(token *jwt.Token) (interface{}, error) {
 			return []byte("secret"), nil
@@ -139,26 +149,16 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(err.Error())
 		return
 	}
-	expiresAt := time.Now().Add(time.Millisecond * 0).Unix()
-	tk.ExpiresAt = expiresAt
-	tk = &service.Token{
-		UserID: 0,
-		Name:   "",
-		// Email:  user.Email,
-		Role: "",
-		StandardClaims: &jwt.StandardClaims{
-			ExpiresAt: expiresAt,
-		},
+	for i, v := range whiteListTokens {
+		if v == header {
+			whiteListTokens = append(whiteListTokens[:i], whiteListTokens[i+1:]...)
+		}
 	}
 
-	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
-	c := http.Cookie{
-		Name:   "token",
-		MaxAge: -1}
-	http.SetCookie(w, &c)
+	if !contains(whiteListTokens, header) {
+		api.Response(http.StatusOK, "Logout successfully", w)
 
-	token.SignedString([]byte(""))
-	api.Response(http.StatusOK, "Logout successfully", w)
+	}
 
 }
 
